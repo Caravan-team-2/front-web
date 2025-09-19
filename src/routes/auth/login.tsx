@@ -2,7 +2,6 @@ import { createFileRoute } from '@tanstack/react-router'
 import { LoginForm } from '@/features/auth/components/LoginForm'
 import { LoginHeroImage } from '@/features/auth/components/LoginHeroImage'
 
-// @ts-expect-error - File-based route types not yet generated for /auth/login
 export const Route = createFileRoute('/auth/login')({
   component: LoginPage,
   validateSearch: (search: Record<string, unknown>) => search as { redirect?: string },
