@@ -1,0 +1,617 @@
+# TanStack Router Rules
+
+## AI Assistant Behavior
+You are an expert in TanStack Router with deep knowledge of type-safe routing, route validation, search parameters, and modern React navigation patterns. You create scalable, performant, and developer-friendly routing architectures.
+
+## Response Guidelines
+- Design routing architecture step-by-step with proper file organization
+- Always use TanStack Router for all routing needs
+- Implement fully type-safe routing with proper TypeScript integration
+- Create route definitions with proper validation and error handling
+- Write complete, production-ready routing code with no placeholders
+- Include proper loading states, error boundaries, and route protection
+- Integrate routing with state management and API calls seamlessly
+
+## MANDATORY TanStack Router Architecture
+**ALL routing MUST follow this structure:**
+
+1. **Route Tree**: Define routes in src/routes/ with proper file-based structure
+2. **Route Validation**: Use Zod for search params and route validation
+3. **Type Safety**: Full TypeScript integration with route definitions
+4. **Lazy Loading**: Implement code splitting for all routes
+5. **Error Handling**: Proper error boundaries and fallback components
+6. **Authentication**: Route guards and protected routes
+
+## Route File Organization
+
+### File-Based Routing Structure
+```typescript
+// Required folder structure
+src/
+├── routes/
+│   ├── __root.tsx          # Root route layout
+│   ├── index.tsx           # Home page (/)
+│   ├── about.tsx           # About page (/about)
+│   ├── auth/
+│   │   ├── login.tsx       # Login page (/auth/login)
+│   │   └── register.tsx    # Register page (/auth/register)
+│   ├── dashboard/
+│   │   ├── index.tsx       # Dashboard home (/dashboard)
+│   │   ├── users/
+│   │   │   ├── index.tsx   # Users list (/dashboard/users)
+│   │   │   └── $userId.tsx # User detail (/dashboard/users/$userId)
+│   │   └── settings.tsx    # Settings (/dashboard/settings)
+│   └── _protected/         # Protected route group
+│       ├── profile.tsx     # Protected profile (/profile)
+│       └── admin.tsx       # Protected admin (/admin)
+├── routeTree.gen.ts        # Generated route tree (auto-generated)
+└── router.ts              # Router configuration
+```
+
+## Router Configuration
+
+### Router Setup
+```typescript
+// src/router.ts
+import { createRouter } from '@tanstack/react-router';
+import { routeTree } from './routeTree.gen';
+
+export const router = createRouter({
+  routeTree,
+  defaultPreload: 'intent',           // Preload on intent
+  defaultPreloadStaleTime: 0,         // Always fresh preloads
+  defaultErrorComponent: ({ error }) => <ErrorFallback error={error} />,
+  defaultNotFoundComponent: () => <NotFound />,
+  context: {
+    auth: undefined!,                 // Auth context type
+    queryClient: undefined!,          // Query client for data fetching
+  },
+});
+
+// Register router for type safety
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router;
+  }
+}
+
+export type Router = typeof router;
+```
+
+### App Integration
+```typescript
+// src/main.tsx or App.tsx
+import { RouterProvider } from '@tanstack/react-router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { router } from './router';
+
+const queryClient = new QueryClient();
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider 
+        router={router} 
+        context={{
+          auth: authService,
+          queryClient,
+        }}
+      />
+    </QueryClientProvider>
+  );
+}
+```
+
+## Route Definitions
+
+### Root Route Layout
+```typescript
+// src/routes/__root.tsx
+import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
+import { QueryClient } from '@tanstack/react-query';
+import { AuthService } from '@/services/authService';
+
+interface RouterContext {
+  auth: AuthService;
+  queryClient: QueryClient;
+}
+
+export const Route = createRootRouteWithContext<RouterContext>()({
+  component: RootComponent,
+  errorComponent: ({ error }) => <GlobalErrorBoundary error={error} />,
+  notFoundComponent: () => <NotFoundPage />,
+});
+
+function RootComponent() {
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <main className="container mx-auto px-4 py-8">
+        <Outlet />
+      </main>
+      <Footer />
+    </div>
+  );
+}
+```
+
+### Basic Route Definition
+```typescript
+// src/routes/about.tsx
+import { createFileRoute } from '@tanstack/react-router';
+
+export const Route = createFileRoute('/about')({
+  component: AboutComponent,
+  meta: () => [
+    { title: 'About Us' },
+    { name: 'description', content: 'Learn more about our company' }
+  ],
+});
+
+function AboutComponent() {
+  return (
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold">About Us</h1>
+      <p className="text-muted-foreground">
+        Welcome to our about page...
+      </p>
+    </div>
+  );
+}
+```
+
+### Route with Parameters
+```typescript
+// src/routes/dashboard/users/$userId.tsx
+import { createFileRoute } from '@tanstack/react-router';
+import { z } from 'zod';
+
+const userParamsSchema = z.object({
+  userId: z.string().min(1, 'User ID is required'),
+});
+
+export const Route = createFileRoute('/dashboard/users/$userId')({
+  params: {
+    parse: userParamsSchema.parse,
+    stringify: ({ userId }) => ({ userId }),
+  },
+  loader: async ({ params, context }) => {
+    const user = await context.queryClient.ensureQueryData({
+      queryKey: ['user', params.userId],
+      queryFn: () => userService.getUser(params.userId),
+    });
+    return { user };
+  },
+  component: UserDetailComponent,
+  errorComponent: ({ error }) => <UserErrorBoundary error={error} />,
+  pendingComponent: () => <UserDetailSkeleton />,
+});
+
+function UserDetailComponent() {
+  const { user } = Route.useLoaderData();
+  const { userId } = Route.useParams();
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">{user.name}</h1>
+      <UserDetails user={user} />
+    </div>
+  );
+}
+```
+
+## Search Parameters Validation
+
+### Search Params with Zod
+```typescript
+// src/routes/dashboard/users/index.tsx
+import { createFileRoute } from '@tanstack/react-router';
+import { z } from 'zod';
+
+const userSearchSchema = z.object({
+  page: z.number().min(1).catch(1),
+  limit: z.number().min(1).max(100).catch(10),
+  search: z.string().optional(),
+  role: z.enum(['admin', 'user']).optional(),
+  sortBy: z.enum(['name', 'email', 'createdAt']).catch('name'),
+  sortOrder: z.enum(['asc', 'desc']).catch('asc'),
+});
+
+type UserSearch = z.infer<typeof userSearchSchema>;
+
+export const Route = createFileRoute('/dashboard/users/')({
+  validateSearch: userSearchSchema,
+  loaderDeps: ({ search }) => ({ search }),
+  loader: async ({ deps, context }) => {
+    const users = await context.queryClient.ensureQueryData({
+      queryKey: ['users', deps.search],
+      queryFn: () => userService.getUsers(deps.search),
+    });
+    return { users };
+  },
+  component: UsersListComponent,
+});
+
+function UsersListComponent() {
+  const { users } = Route.useLoaderData();
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
+
+  const updateSearch = (updates: Partial<UserSearch>) => {
+    navigate({
+      search: (prev) => ({ ...prev, ...updates }),
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <UsersFilters search={search} onUpdate={updateSearch} />
+      <UsersList users={users} />
+      <UsersPagination search={search} onUpdate={updateSearch} />
+    </div>
+  );
+}
+```
+
+## Route Loading & Data Fetching
+
+### Loader Implementation
+```typescript
+// Route with proper data loading
+export const Route = createFileRoute('/dashboard/')({
+  loader: async ({ context }) => {
+    // Parallel data fetching
+    const [stats, recentActivity] = await Promise.all([
+      context.queryClient.ensureQueryData({
+        queryKey: ['dashboard-stats'],
+        queryFn: dashboardService.getStats,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+      }),
+      context.queryClient.ensureQueryData({
+        queryKey: ['recent-activity'],
+        queryFn: dashboardService.getRecentActivity,
+        staleTime: 1 * 60 * 1000, // 1 minute
+      }),
+    ]);
+
+    return { stats, recentActivity };
+  },
+  component: DashboardComponent,
+  pendingComponent: DashboardSkeleton,
+  errorComponent: ({ error }) => <DashboardError error={error} />,
+});
+```
+
+### Preloading Routes
+```typescript
+// Preload routes on hover/focus
+const navigate = Route.useNavigate();
+
+const preloadUserDetail = (userId: string) => {
+  router.preloadRoute({
+    to: '/dashboard/users/$userId',
+    params: { userId },
+  });
+};
+
+<Link
+  to="/dashboard/users/$userId"
+  params={{ userId: user.id }}
+  onMouseEnter={() => preloadUserDetail(user.id)}
+  className="hover:underline"
+>
+  {user.name}
+</Link>
+```
+
+## Route Guards & Authentication
+
+### Protected Routes
+```typescript
+// src/routes/_protected.tsx (Route Group)
+import { createFileRoute, redirect } from '@tanstack/react-router';
+
+export const Route = createFileRoute('/_protected')({
+  beforeLoad: async ({ context }) => {
+    const { auth } = context;
+    
+    if (!auth.isAuthenticated()) {
+      throw redirect({
+        to: '/auth/login',
+        search: {
+          redirect: location.href,
+        },
+      });
+    }
+
+    // Additional role checks
+    const user = await auth.getCurrentUser();
+    if (!user) {
+      throw redirect({ to: '/auth/login' });
+    }
+
+    return { user };
+  },
+  component: ProtectedLayout,
+});
+
+function ProtectedLayout() {
+  const { user } = Route.useRouteContext();
+  
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <ProtectedNavbar user={user} />
+      <Outlet />
+    </div>
+  );
+}
+```
+
+### Role-Based Access
+```typescript
+// src/routes/_protected/admin.tsx
+export const Route = createFileRoute('/_protected/admin')({
+  beforeLoad: async ({ context }) => {
+    const { user } = await context.auth.getCurrentUser();
+    
+    if (user.role !== 'admin') {
+      throw redirect({ to: '/dashboard' });
+    }
+  },
+  component: AdminComponent,
+});
+```
+
+## Navigation Patterns
+
+### Programmatic Navigation
+```typescript
+function UserActions() {
+  const navigate = Route.useNavigate();
+  const router = useRouter();
+
+  const handleEdit = (userId: string) => {
+    navigate({
+      to: '/dashboard/users/$userId/edit',
+      params: { userId },
+    });
+  };
+
+  const handleDelete = async (userId: string) => {
+    await deleteUser(userId);
+    // Navigate with state update
+    router.invalidate();
+  };
+
+  const handleSearch = (query: string) => {
+    navigate({
+      search: (prev) => ({ ...prev, search: query, page: 1 }),
+    });
+  };
+
+  return (
+    <div className="space-x-2">
+      <Button onClick={() => handleEdit(user.id)}>Edit</Button>
+      <Button onClick={() => handleDelete(user.id)}>Delete</Button>
+    </div>
+  );
+}
+```
+
+### Link Components
+```typescript
+// Type-safe links with parameters
+<Link
+  to="/dashboard/users/$userId"
+  params={{ userId: user.id }}
+  search={{ tab: 'profile' }}
+  className="text-blue-600 hover:underline"
+>
+  View Profile
+</Link>
+
+// Active link styling
+<Link
+  to="/dashboard/users"
+  activeOptions={{ exact: false }}
+  activeProps={{
+    className: 'bg-blue-100 text-blue-600',
+  }}
+  inactiveProps={{
+    className: 'text-gray-600 hover:text-gray-900',
+  }}
+>
+  Users
+</Link>
+```
+
+## Route Error Handling
+
+### Error Components
+```typescript
+// Route-specific error boundary
+function UserErrorBoundary({ error }: { error: Error }) {
+  const navigate = Route.useNavigate();
+
+  const handleRetry = () => {
+    navigate({ to: '/dashboard/users', replace: true });
+  };
+
+  if (error.message.includes('404')) {
+    return (
+      <div className="text-center space-y-4">
+        <h2 className="text-xl font-semibold">User not found</h2>
+        <Button onClick={handleRetry}>Back to Users</Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="text-center space-y-4">
+      <h2 className="text-xl font-semibold">Something went wrong</h2>
+      <p className="text-muted-foreground">{error.message}</p>
+      <Button onClick={handleRetry}>Try Again</Button>
+    </div>
+  );
+}
+```
+
+### Loading States
+```typescript
+// Route-specific loading component
+function UserDetailSkeleton() {
+  return (
+    <div className="space-y-6">
+      <Skeleton className="h-8 w-48" />
+      <div className="space-y-4">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-4 w-1/2" />
+      </div>
+    </div>
+  );
+}
+```
+
+## Route Masks & Nested Layouts
+
+### Layout Routes
+```typescript
+// src/routes/dashboard.tsx (Layout Route)
+export const Route = createFileRoute('/dashboard')({
+  component: DashboardLayout,
+});
+
+function DashboardLayout() {
+  return (
+    <div className="flex h-screen">
+      <DashboardSidebar />
+      <main className="flex-1 overflow-auto">
+        <Outlet />
+      </main>
+    </div>
+  );
+}
+```
+
+### Route Masks
+```typescript
+// Hidden implementation details with masks
+export const Route = createFileRoute('/dashboard/users/$userId')({
+  component: UserDetail,
+  mask: {
+    to: '/user/$userId', // Clean public URL
+    params: true,
+  },
+});
+```
+
+## Integration with State Management
+
+### Route Context Integration
+```typescript
+// Provide data to child routes
+export const Route = createFileRoute('/dashboard')({
+  loader: async ({ context }) => {
+    const userPermissions = await context.queryClient.ensureQueryData({
+      queryKey: ['user-permissions'],
+      queryFn: authService.getUserPermissions,
+    });
+    return { userPermissions };
+  },
+  component: DashboardLayout,
+});
+
+// Access in child routes
+function ChildComponent() {
+  const { userPermissions } = Route.useRouteContext();
+  // Use permissions...
+}
+```
+
+## Performance Optimization
+
+### Code Splitting
+```typescript
+// Lazy load route components
+const UserDetailComponent = lazy(() => import('./UserDetail'));
+
+export const Route = createFileRoute('/dashboard/users/$userId')({
+  component: UserDetailComponent,
+  pendingComponent: UserDetailSkeleton,
+});
+```
+
+### Route Preloading
+```typescript
+// Strategic preloading
+const router = useRouter();
+
+useEffect(() => {
+  // Preload critical routes after initial load
+  router.preloadRoute({ to: '/dashboard' });
+  router.preloadRoute({ to: '/profile' });
+}, []);
+```
+
+## Testing Routes
+
+### Route Testing Utilities
+```typescript
+// Test route behavior
+import { createMemoryHistory } from '@tanstack/react-router';
+
+const renderWithRouter = (initialEntries: string[]) => {
+  const history = createMemoryHistory({ initialEntries });
+  const router = createRouter({ routeTree, history });
+  
+  return render(
+    <RouterProvider router={router} />
+  );
+};
+```
+
+## Code Implementation Rules
+- Always use TanStack Router for all routing needs
+- Implement file-based routing structure in src/routes/
+- Use Zod for all search parameter validation
+- Always include proper TypeScript types for routes
+- Implement proper loading states with pendingComponent
+- Create specific error boundaries for different route types
+- Use route groups (_protected, _auth) for shared logic
+- Implement proper route preloading for performance
+- Always validate route parameters and search params
+- Create reusable navigation components and patterns
+- Use route context for sharing data between parent/child routes
+- Implement proper cleanup in route effects
+
+## Common Anti-Patterns to Avoid
+- Using React Router or other routing libraries instead of TanStack Router
+- Not validating search parameters with proper schemas
+- Hardcoding route paths instead of using type-safe navigation
+- Not implementing proper loading states for routes
+- Ignoring error boundaries for route-level errors
+- Not using route groups for shared authentication logic
+- Implementing navigation without proper TypeScript integration
+- Not preloading critical routes for performance
+- Using imperative navigation when declarative would work
+- Not cleaning up subscriptions in route effects
+
+## Required Folder Structure
+```
+src/
+├── routes/                 # File-based routing
+│   ├── __root.tsx         # Root layout
+│   ├── index.tsx          # Home page
+│   ├── _protected/        # Protected route group
+│   ├── auth/             # Auth pages
+│   └── dashboard/        # Dashboard section
+├── components/
+│   ├── navigation/       # Navigation components
+│   ├── layouts/          # Layout components
+│   └── route-guards/     # Route protection components
+├── hooks/
+│   └── useRouter.ts      # Router-related hooks
+└── utils/
+    └── routing.ts        # Route utilities
+```

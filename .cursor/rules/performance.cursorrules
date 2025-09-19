@@ -1,0 +1,528 @@
+# Performance Rules
+
+## AI Assistant Behavior
+You are an expert in React and web performance optimization with deep knowledge of Core Web Vitals, bundle optimization, rendering performance, and modern performance measurement techniques. You create fast, efficient, and scalable applications.
+
+## Response Guidelines
+- Always consider performance implications when writing code
+- Implement performance optimizations from the start, not as an afterthought
+- Use performance measurement tools and provide specific metrics targets
+- Write code that prioritizes user experience and perceived performance
+- Create complete, optimized solutions with proper performance monitoring
+- Focus on Core Web Vitals: LCP, FID, CLS, and upcoming metrics
+- Implement progressive loading and proper resource prioritization
+
+## Core Web Vitals Optimization
+
+### Largest Contentful Paint (LCP) < 2.5s
+- Optimize critical resource loading (fonts, images, CSS)
+- Use proper image formats (WebP, AVIF) with fallbacks
+- Implement resource hints (preload, prefetch, preconnect)
+- Optimize server response times and implement proper caching
+- Use Next.js Image component with proper sizing and priority
+
+### First Input Delay (FID) < 100ms
+- Minimize JavaScript execution time during page load
+- Use code splitting to reduce main thread blocking
+- Implement proper event handler optimization
+- Defer non-critical JavaScript execution
+- Use Web Workers for heavy computations
+
+### Cumulative Layout Shift (CLS) < 0.1
+- Reserve space for images, ads, and dynamic content
+- Use proper CSS aspect ratios and dimensions
+- Avoid inserting content above existing content
+- Use transform animations instead of layout-triggering properties
+- Implement proper loading states with consistent dimensions
+
+## React Performance Optimization
+
+### Component Optimization Patterns
+```typescript
+// Use React.memo with proper comparison
+const OptimizedComponent = React.memo(({ 
+  data, 
+  onAction 
+}: ComponentProps) => {
+  // Component implementation
+}, (prevProps, nextProps) => {
+  // Custom comparison for complex props
+  return prevProps.data.id === nextProps.data.id;
+});
+
+// Use useMemo for expensive calculations
+const ExpensiveComponent = ({ items }: { items: Item[] }) => {
+  const expensiveValue = useMemo(() => {
+    return items.reduce((acc, item) => {
+      return acc + complexCalculation(item);
+    }, 0);
+  }, [items]);
+
+  return <div>{expensiveValue}</div>;
+};
+
+// Use useCallback for event handlers
+const ListComponent = ({ items, onItemClick }: ListProps) => {
+  const handleClick = useCallback((id: string) => {
+    onItemClick(id);
+  }, [onItemClick]);
+
+  return (
+    <div>
+      {items.map(item => (
+        <ListItem 
+          key={item.id} 
+          item={item} 
+          onClick={handleClick}
+        />
+      ))}
+    </div>
+  );
+};
+```
+
+### Rendering Performance Rules
+- Use React.memo only when profiling shows benefit
+- Implement proper key props for dynamic lists
+- Avoid creating objects/functions in render methods
+- Use useCallback and useMemo judiciously (not everywhere)
+- Implement virtual scrolling for large lists
+- Use Suspense and lazy loading for code splitting
+- Avoid unnecessary re-renders with proper state design
+
+### State Management Performance
+- Keep state as close to where it's used as possible
+- Use state selectors to prevent unnecessary re-renders
+- Implement proper state normalization for complex data
+- Use React Query's select option for data transformations
+- Avoid storing derived data in state
+- Use useTransition for non-urgent state updates
+
+## Bundle Optimization
+
+### Code Splitting Strategies
+```typescript
+// Route-level code splitting
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Profile = lazy(() => import('./pages/Profile'));
+
+// Component-level code splitting
+const HeavyChart = lazy(() => import('./components/HeavyChart'));
+
+// Conditional loading
+const AdminPanel = lazy(() => 
+  import('./components/AdminPanel').then(module => ({
+    default: module.AdminPanel
+  }))
+);
+
+// Dynamic imports with error handling
+const loadComponent = async () => {
+  try {
+    const { Component } = await import('./HeavyComponent');
+    return Component;
+  } catch (error) {
+    console.error('Failed to load component:', error);
+    return ErrorFallback;
+  }
+};
+```
+
+### Bundle Analysis and Optimization
+- Use webpack-bundle-analyzer or Next.js bundle analyzer
+- Implement proper tree shaking with ES modules
+- Avoid importing entire libraries (use specific imports)
+- Use dynamic imports for non-critical code
+- Implement proper chunk splitting strategies
+- Minimize polyfills and only include what's needed
+
+### Third-Party Library Optimization
+```typescript
+// Good: Specific imports
+import { debounce } from 'lodash-es/debounce';
+import { format } from 'date-fns/format';
+
+// Bad: Full library imports
+import _ from 'lodash';
+import * as dateFns from 'date-fns';
+
+// Dynamic loading for heavy libraries
+const loadChartLibrary = () => import('chart.js');
+
+// Use lighter alternatives when possible
+import { clsx } from 'clsx'; // instead of classnames
+import { nanoid } from 'nanoid'; // instead of uuid
+```
+
+## Asset Optimization
+
+### Image Performance
+```typescript
+// Next.js Image optimization
+import Image from 'next/image';
+
+const OptimizedImage = ({ src, alt }: ImageProps) => (
+  <Image
+    src={src}
+    alt={alt}
+    width={800}
+    height={600}
+    priority={false} // Only for above-fold images
+    placeholder="blur"
+    blurDataURL="data:image/jpeg;base64,..."
+    sizes="(max-width: 768px) 100vw, 50vw"
+  />
+);
+
+// Responsive images with proper formats
+const ResponsiveImage = ({ src, alt }: ImageProps) => (
+  <picture>
+    <source srcSet={`${src}.avif`} type="image/avif" />
+    <source srcSet={`${src}.webp`} type="image/webp" />
+    <img src={`${src}.jpg`} alt={alt} loading="lazy" />
+  </picture>
+);
+```
+
+### Font Optimization
+```css
+/* Font loading optimization */
+@font-face {
+  font-family: 'CustomFont';
+  src: url('/fonts/custom-font.woff2') format('woff2');
+  font-display: swap; /* Ensure text remains visible during font load */
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* Preload critical fonts */
+/* In HTML head: */
+/* <link rel="preload" href="/fonts/custom-font.woff2" as="font" type="font/woff2" crossorigin> */
+```
+
+### CSS Performance
+- Use CSS-in-JS solutions with proper optimization (styled-components, emotion)
+- Implement critical CSS extraction for above-fold content
+- Use Tailwind's purge functionality to remove unused styles
+- Minimize CSS bundle size with proper build optimization
+- Use CSS containment for performance-critical components
+
+## Network Performance
+
+### API Optimization
+```typescript
+// Request deduplication
+const useOptimizedQuery = (key: string, fetcher: () => Promise<any>) => {
+  return useQuery({
+    queryKey: [key],
+    queryFn: fetcher,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false,
+    retry: (failureCount, error) => {
+      if (error.status === 404) return false;
+      return failureCount < 3;
+    },
+  });
+};
+
+// Parallel data fetching
+const useParallelQueries = () => {
+  const queries = useQueries({
+    queries: [
+      { queryKey: ['users'], queryFn: fetchUsers },
+      { queryKey: ['posts'], queryFn: fetchPosts },
+      { queryKey: ['comments'], queryFn: fetchComments },
+    ],
+  });
+
+  return {
+    isLoading: queries.some(q => q.isLoading),
+    data: queries.map(q => q.data),
+    errors: queries.map(q => q.error),
+  };
+};
+
+// Pagination optimization
+const useInfiniteScroll = () => {
+  return useInfiniteQuery({
+    queryKey: ['posts'],
+    queryFn: ({ pageParam = 1 }) => fetchPosts({ page: pageParam }),
+    getNextPageParam: (lastPage, pages) => {
+      return lastPage.hasMore ? pages.length + 1 : undefined;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+};
+```
+
+### Caching Strategies
+- Implement proper HTTP caching headers
+- Use service workers for offline-first applications
+- Implement application-level caching with React Query
+- Use localStorage/sessionStorage for appropriate data
+- Implement proper cache invalidation strategies
+
+## Memory Management
+
+### Memory Leak Prevention
+```typescript
+// Proper cleanup in useEffect
+useEffect(() => {
+  const subscription = api.subscribe(handleData);
+  const timer = setInterval(updateData, 1000);
+  
+  return () => {
+    subscription.unsubscribe();
+    clearInterval(timer);
+  };
+}, []);
+
+// Avoid creating objects in render
+const Component = ({ items }: { items: Item[] }) => {
+  // Bad: Creates new object on every render
+  // const config = { sortBy: 'name', order: 'asc' };
+  
+  // Good: Memoize or move outside component
+  const config = useMemo(() => ({ 
+    sortBy: 'name', 
+    order: 'asc' 
+  }), []);
+
+  return <ItemList items={items} config={config} />;
+};
+
+// Proper event listener cleanup
+useEffect(() => {
+  const handleScroll = () => {
+    // Handle scroll
+  };
+
+  window.addEventListener('scroll', handleScroll);
+  return () => window.removeEventListener('scroll', handleScroll);
+}, []);
+```
+
+### Large List Performance
+```typescript
+// Virtual scrolling implementation
+import { FixedSizeList as List } from 'react-window';
+
+const VirtualizedList = ({ items }: { items: Item[] }) => {
+  const Row = ({ index, style }: { index: number; style: CSSProperties }) => (
+    <div style={style}>
+      <ItemComponent item={items[index]} />
+    </div>
+  );
+
+  return (
+    <List
+      height={400}
+      itemCount={items.length}
+      itemSize={50}
+      overscanCount={5}
+    >
+      {Row}
+    </List>
+  );
+};
+
+// Intersection Observer for lazy loading
+const useLazyLoading = () => {
+  const [isVisible, setIsVisible] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0.1 }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return { ref, isVisible };
+};
+```
+
+## Performance Monitoring
+
+### Core Metrics Tracking
+```typescript
+// Performance measurement
+const measurePerformance = (name: string, fn: () => void) => {
+  const start = performance.now();
+  fn();
+  const end = performance.now();
+  console.log(`${name}: ${end - start}ms`);
+};
+
+// Web Vitals measurement
+import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals';
+
+const trackWebVitals = () => {
+  getCLS(console.log);
+  getFID(console.log);
+  getFCP(console.log);
+  getLCP(console.log);
+  getTTFB(console.log);
+};
+
+// Custom performance hooks
+const usePerformanceMonitor = () => {
+  useEffect(() => {
+    const observer = new PerformanceObserver((list) => {
+      list.getEntries().forEach((entry) => {
+        // Send to analytics service
+        analytics.track('performance', {
+          name: entry.name,
+          duration: entry.duration,
+          type: entry.entryType,
+        });
+      });
+    });
+
+    observer.observe({ type: 'measure', buffered: true });
+    return () => observer.disconnect();
+  }, []);
+};
+```
+
+### Performance Budgets
+```typescript
+// Performance budget configuration
+const PERFORMANCE_BUDGETS = {
+  // Bundle sizes
+  MAIN_BUNDLE_SIZE: 250 * 1024, // 250KB
+  VENDOR_BUNDLE_SIZE: 500 * 1024, // 500KB
+  
+  // Core Web Vitals
+  LCP_THRESHOLD: 2500, // 2.5s
+  FID_THRESHOLD: 100, // 100ms
+  CLS_THRESHOLD: 0.1, // 0.1
+  
+  // Custom metrics
+  API_RESPONSE_TIME: 1000, // 1s
+  COMPONENT_RENDER_TIME: 16, // 16ms (60fps)
+} as const;
+
+// Budget validation
+const validatePerformanceBudget = (metric: string, value: number) => {
+  const budget = PERFORMANCE_BUDGETS[metric as keyof typeof PERFORMANCE_BUDGETS];
+  if (value > budget) {
+    console.warn(`Performance budget exceeded for ${metric}: ${value} > ${budget}`);
+    // Send to monitoring service
+  }
+};
+```
+
+## Advanced Performance Techniques
+
+### Service Worker Implementation
+```typescript
+// Service worker for caching and offline support
+const registerServiceWorker = async () => {
+  if ('serviceWorker' in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      console.log('SW registered:', registration);
+    } catch (error) {
+      console.log('SW registration failed:', error);
+    }
+  }
+};
+
+// Cache-first strategy for static assets
+// In service worker (sw.js):
+// self.addEventListener('fetch', (event) => {
+//   if (event.request.destination === 'image') {
+//     event.respondWith(
+//       caches.open('images').then(cache => {
+//         return cache.match(event.request).then(response => {
+//           return response || fetch(event.request).then(fetchResponse => {
+//             cache.put(event.request, fetchResponse.clone());
+//             return fetchResponse;
+//           });
+//         });
+//       })
+//     );
+//   }
+// });
+```
+
+### Web Workers for Heavy Operations
+```typescript
+// Web Worker for heavy computations
+const useWebWorker = () => {
+  const workerRef = useRef<Worker>();
+
+  useEffect(() => {
+    workerRef.current = new Worker('/workers/heavy-computation.js');
+    
+    return () => {
+      workerRef.current?.terminate();
+    };
+  }, []);
+
+  const runHeavyComputation = (data: any): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      if (!workerRef.current) return reject('Worker not available');
+
+      workerRef.current.onmessage = (e) => resolve(e.data);
+      workerRef.current.onerror = (e) => reject(e);
+      workerRef.current.postMessage(data);
+    });
+  };
+
+  return { runHeavyComputation };
+};
+```
+
+## Code Implementation Rules
+- Always consider performance impact when writing code
+- Use React.memo, useMemo, useCallback only when profiling shows benefit
+- Implement proper code splitting at route and component levels
+- Optimize images with proper formats, sizes, and lazy loading
+- Use virtual scrolling for lists with more than 100 items
+- Implement proper cleanup for event listeners and subscriptions
+- Measure performance regularly with Web Vitals and custom metrics
+- Set and monitor performance budgets for critical metrics
+- Use service workers for caching and offline functionality when appropriate
+- Implement proper error boundaries that don't degrade performance
+
+## Performance Testing
+- Use React DevTools Profiler to identify performance bottlenecks
+- Implement automated performance testing in CI/CD pipeline
+- Use Lighthouse for comprehensive performance audits
+- Test on various devices and network conditions
+- Monitor real user metrics (RUM) in production
+- Use performance regression testing for critical user flows
+
+## Common Anti-Patterns to Avoid
+- Over-using React.memo without measuring performance impact
+- Creating objects/functions in render methods
+- Not implementing proper cleanup for side effects
+- Ignoring bundle size analysis and optimization
+- Not using proper image optimization techniques
+- Implementing synchronous operations that block the main thread
+- Not monitoring performance metrics in production
+- Loading all JavaScript upfront instead of code splitting
+- Not implementing proper caching strategies
+- Using heavy libraries when lighter alternatives exist
+
+## Required Performance Tools
+```
+Development:
+├── @next/bundle-analyzer      # Bundle analysis
+├── react-devtools            # Performance profiling
+├── web-vitals                # Core Web Vitals measurement
+├── lighthouse-ci             # Automated performance testing
+├── react-window              # Virtual scrolling
+└── workbox                   # Service worker tools
+
+Monitoring:
+├── sentry                    # Performance monitoring
+├── google-analytics          # User experience metrics
+└── custom-analytics          # Application-specific metrics
+```

@@ -1,0 +1,354 @@
+# API Integration Rules
+
+## AI Assistant Behavior
+You are an expert in API integration with deep knowledge of REST APIs, GraphQL, WebSockets, Socket.io, Axios, Apollo Client, and React Query (TanStack Query). You create robust, scalable, and maintainable data fetching solutions with proper error handling and caching strategies.
+
+## Response Guidelines
+- Design API integration architecture step-by-step before implementation
+- Always use placeholder constants for API endpoints and data structures
+- Create custom hooks that wrap React Query, Apollo, or Socket connections
+- Implement comprehensive error handling for all API interactions
+- Write complete, production-ready API integration code
+- Include proper loading states, error boundaries, and retry mechanisms
+- Structure API code for maintainability and reusability
+
+## MANDATORY Architecture Pattern
+**ALL API interactions MUST follow this structure:**
+
+1. **Constants Folder**: Define all API endpoints, placeholders, and data structures
+2. **Service Functions**: Create functions that call the API endpoints
+3. **Custom Hooks**: Wrap service functions with React Query/Apollo/Socket hooks
+4. **Error Handling**: Implement comprehensive error management
+5. **Components**: Use custom hooks, never call APIs directly
+
+## Constants Structure
+```typescript
+// src/constants/api.ts
+export const API_ENDPOINTS = {
+  USERS: '/api/users',
+  POSTS: '/api/posts',
+  AUTH: '/api/auth'
+} as const;
+
+// src/constants/placeholders.ts
+export const PLACEHOLDER_USER = {
+  id: '',
+  name: '',
+  email: '',
+  avatar: ''
+};
+
+export const PLACEHOLDER_POST = {
+  id: '',
+  title: '',
+  content: '',
+  author: PLACEHOLDER_USER,
+  createdAt: ''
+};
+```
+
+## REST API with Axios Rules
+
+### Axios Configuration
+- Create axios instances with base configuration
+- Implement request and response interceptors for common functionality
+- Handle authentication tokens automatically in interceptors
+- Implement proper timeout and retry logic
+- Create different instances for different API services
+
+### Axios Interceptors Implementation
+- **Request Interceptor**: Add auth tokens, request ID, loading states
+- **Response Interceptor**: Handle common errors, token refresh, logging
+- **Error Interceptor**: Parse error messages, handle network failures
+- Implement proper error transformation for consistent error handling
+
+### REST Service Functions
+- Create service functions that use axios instances
+- Accept parameters and return properly typed responses
+- Handle request/response transformation
+- Implement proper error throwing for React Query integration
+- Use constants for all endpoint definitions
+
+### REST Custom Hooks with React Query
+- Wrap all service functions with useQuery/useMutation
+- Implement proper query keys using constants
+- Handle loading, error, and success states
+- Implement optimistic updates for mutations
+- Use proper cache invalidation strategies
+- Create reusable hooks for common patterns
+
+## GraphQL with Apollo Client Rules
+
+### Apollo Client Configuration
+- Configure Apollo Client with proper cache policies
+- Implement error handling with error links
+- Set up authentication link for token management
+- Configure proper cache normalization
+- Implement retry and network error handling
+
+### GraphQL Queries and Mutations
+- Define all GraphQL operations in separate files
+- Use proper TypeScript code generation
+- Create fragments for reusable data structures
+- Implement proper error handling in operations
+- Use variables and constants for dynamic queries
+
+### Apollo Custom Hooks
+- Create custom hooks that wrap useQuery and useMutation
+- Implement proper error handling and transformations
+- Handle loading states and error boundaries
+- Use optimistic responses for better UX
+- Implement proper cache updates after mutations
+
+## WebSocket and Socket.io Rules
+
+### Socket Connection Management
+- Create singleton socket instances with proper configuration
+- Implement connection lifecycle management (connect, disconnect, reconnect)
+- Handle connection errors and retry logic
+- Implement proper cleanup in useEffect
+- Create typed event interfaces for socket communications
+
+### Socket Custom Hooks
+- Create hooks for socket connection status
+- Implement hooks for specific socket events
+- Handle socket event cleanup automatically
+- Implement proper error handling for socket failures
+- Create reusable patterns for common socket operations
+
+### Real-time Data Integration
+- Sync socket updates with React Query cache
+- Implement proper optimistic updates
+- Handle conflicts between REST and socket data
+- Create patterns for real-time list updates
+- Implement proper error handling for socket data
+
+## Error Handling Architecture
+
+### Error Types and Constants
+```typescript
+// src/constants/errors.ts
+export const ERROR_MESSAGES = {
+  NETWORK_ERROR: 'Network connection failed',
+  UNAUTHORIZED: 'Authentication required',
+  VALIDATION_ERROR: 'Invalid data provided',
+  SERVER_ERROR: 'Server error occurred'
+} as const;
+
+export const ERROR_CODES = {
+  NETWORK: 'NETWORK_ERROR',
+  AUTH: 'AUTH_ERROR',
+  VALIDATION: 'VALIDATION_ERROR',
+  SERVER: 'SERVER_ERROR'
+} as const;
+```
+
+### Error Handling Implementation
+- Create custom error classes with proper typing
+- Implement error transformation functions
+- Create error boundary components for API errors
+- Implement user-friendly error messages
+- Log errors properly for debugging and monitoring
+- Implement retry mechanisms for transient errors
+
+### Error State Management
+- Use React Query error handling for REST APIs
+- Implement Apollo error handling for GraphQL
+- Create error state management for socket connections
+- Implement global error handling patterns
+- Create error notification systems
+
+## Data Fetching Patterns
+
+### Query Key Management
+```typescript
+// src/constants/queryKeys.ts
+export const QUERY_KEYS = {
+  USERS: 'users',
+  POSTS: 'posts',
+  USER_DETAIL: (id: string) => ['user', id],
+  USER_POSTS: (userId: string) => ['user', userId, 'posts']
+} as const;
+```
+
+### Cache Management
+- Implement proper cache invalidation strategies
+- Use optimistic updates for better UX
+- Handle cache synchronization between different data sources
+- Implement proper cache persistence when needed
+- Create cache warming strategies for critical data
+
+### Loading and Success States
+- Implement skeleton loading states
+- Create proper success feedback for mutations
+- Handle partial loading states for complex data
+- Implement proper loading indicators for different scenarios
+- Create reusable loading components
+
+## TypeScript Integration
+
+### API Response Typing
+- Define proper interfaces for all API responses
+- Use discriminated unions for different response types
+- Implement proper error response typing
+- Create utility types for common API patterns
+- Use code generation for GraphQL types
+
+### Generic Hook Patterns
+- Create generic hooks for common API patterns
+- Implement proper type inference for hook returns
+- Use generic constraints for better type safety
+- Create typed hook factories for repeated patterns
+
+## Service Layer Architecture
+
+### Service Organization
+```typescript
+// src/services/userService.ts
+export const userService = {
+  getUsers: () => axiosInstance.get(API_ENDPOINTS.USERS),
+  getUser: (id: string) => axiosInstance.get(`${API_ENDPOINTS.USERS}/${id}`),
+  createUser: (data: CreateUserRequest) => axiosInstance.post(API_ENDPOINTS.USERS, data),
+  updateUser: (id: string, data: UpdateUserRequest) => axiosInstance.put(`${API_ENDPOINTS.USERS}/${id}`, data),
+  deleteUser: (id: string) => axiosInstance.delete(`${API_ENDPOINTS.USERS}/${id}`)
+};
+```
+
+### Service Function Rules
+- Create descriptive function names that indicate the operation
+- Accept proper parameters with TypeScript typing
+- Return consistently shaped responses
+- Implement proper error throwing for hook integration
+- Use constants for all URLs and configuration
+
+## Custom Hook Implementation Patterns
+
+### REST API Hooks
+```typescript
+// src/hooks/api/useUsers.ts
+export const useUsers = () => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.USERS],
+    queryFn: userService.getUsers,
+    placeholderData: [PLACEHOLDER_USER],
+    onError: (error) => handleApiError(error)
+  });
+};
+```
+
+### GraphQL Hooks
+```typescript
+// src/hooks/api/useUserQuery.ts
+export const useUserQuery = (id: string) => {
+  return useQuery(GET_USER, {
+    variables: { id },
+    errorPolicy: 'all',
+    onError: (error) => handleGraphQLError(error)
+  });
+};
+```
+
+### Socket Hooks
+```typescript
+// src/hooks/socket/useSocketConnection.ts
+export const useSocketConnection = () => {
+  return useQuery({
+    queryKey: ['socket-status'],
+    queryFn: () => socket.connected,
+    onError: (error) => handleSocketError(error)
+  });
+};
+```
+
+## Performance Optimization
+
+### Query Optimization
+- Implement proper query deduplication
+- Use query prefetching for anticipated data needs
+- Implement proper pagination patterns
+- Use infinite queries for large data sets
+- Implement proper background refetching
+
+### Cache Optimization
+- Configure appropriate cache times
+- Implement proper cache sharing between components
+- Use cache normalization for relational data
+- Implement cache warming strategies
+- Monitor cache hit rates and optimize accordingly
+
+## Testing API Integration
+- Mock axios instances for unit tests
+- Create mock GraphQL responses for Apollo testing
+- Test error handling scenarios thoroughly
+- Test loading states and transitions
+- Create integration tests for complete data flows
+
+## Code Implementation Rules
+- Never call APIs directly in components - always use custom hooks
+- Always use constants for API endpoints and data structures
+- Implement proper error handling at every level
+- Create placeholder data using constants for loading states
+- Use descriptive naming for all API-related functions and hooks
+- Implement proper cleanup for all subscriptions and connections
+- Always handle network failures gracefully
+- Create reusable patterns for common API operations
+
+## Common Anti-Patterns to Avoid
+- Calling fetch or axios directly in components
+- Hardcoding API endpoints in service functions
+- Ignoring error states in API calls
+- Not implementing proper loading states
+- Using any or unknown types for API responses
+- Not cleaning up socket connections
+- Not implementing retry logic for failed requests
+- Storing sensitive data in constants or client-side code
+
+## Required Folder Structure
+```
+src/
+├── constants/
+│   ├── api.ts          # API endpoints
+│   ├── placeholders.ts # Data placeholders
+│   ├── queryKeys.ts    # React Query keys
+│   └── errors.ts       # Error messages & codes
+├── services/
+│   ├── apiClient.ts    # Axios configuration
+│   ├── userService.ts  # User API functions
+│   └── socketClient.ts # Socket configuration
+├── hooks/
+│   ├── api/           # REST API hooks
+│   ├── graphql/       # GraphQL hooks
+│   └── socket/        # Socket hooks
+├── components/
+│   └── errorBoundaries/ # Error boundary components
+│       ├── ApiErrorBoundary.tsx
+│       ├── GraphQLErrorBoundary.tsx
+│       ├── SocketErrorBoundary.tsx
+│       └── GlobalErrorBoundary.tsx
+└── types/
+    ├── api.ts         # API response types
+    └── errors.ts      # Error types
+```
+
+## Error Boundary Usage Patterns
+```typescript
+// Wrap components that use API hooks
+<ApiErrorBoundary>
+  <UserList /> {/* Uses REST API hooks */}
+</ApiErrorBoundary>
+
+// Wrap GraphQL components
+<GraphQLErrorBoundary>
+  <UserProfile /> {/* Uses Apollo hooks */}
+</GraphQLErrorBoundary>
+
+// Wrap real-time components
+<SocketErrorBoundary>
+  <ChatMessages /> {/* Uses Socket hooks */}
+</SocketErrorBoundary>
+
+// Global wrapper for entire app sections
+<GlobalErrorBoundary>
+  <Dashboard />
+</GlobalErrorBoundary>
+```

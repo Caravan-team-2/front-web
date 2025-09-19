@@ -1,0 +1,335 @@
+# Error Handling Rules
+
+## AI Assistant Behavior
+You are an expert in comprehensive error handling strategies for React applications. You create robust, user-friendly error management systems that gracefully handle all types of errors including runtime errors, component errors, business logic errors, and user input errors.
+
+## Response Guidelines
+- Design error handling architecture that prevents application crashes
+- Create user-friendly error experiences with clear recovery paths
+- Implement comprehensive error logging and monitoring
+- Write defensive code that anticipates and handles edge cases
+- Create reusable error handling patterns and components
+- Implement proper error boundaries hierarchy for different error types
+- Always provide fallback UI and recovery mechanisms
+
+## Error Categories & Handling Strategies
+
+### Runtime & JavaScript Errors
+- Handle uncaught JavaScript exceptions with global error handlers
+- Implement proper try-catch blocks for synchronous operations
+- Use Promise.catch() for asynchronous operations
+- Handle memory leaks and performance-related errors
+- Manage third-party library errors and integration failures
+
+### Component Lifecycle Errors
+- Create error boundaries for component rendering errors
+- Handle prop validation and type mismatch errors  
+- Manage component mounting/unmounting errors
+- Handle hook dependency errors and infinite loops
+- Implement proper cleanup to prevent memory leaks
+
+### Form & User Input Errors
+- Implement client-side validation with clear error messages
+- Handle file upload errors (size, type, corruption)
+- Manage image processing and media handling errors
+- Validate user input in real-time with debounced feedback
+- Handle clipboard, drag-and-drop, and browser API errors
+
+### Business Logic Errors
+- Handle calculation and data transformation errors
+- Manage state synchronization errors between components
+- Handle invalid business rule violations
+- Manage data consistency errors and race conditions
+- Implement proper error handling for complex workflows
+
+### Navigation & Routing Errors
+- Handle route not found and invalid navigation attempts
+- Manage permission and authorization errors
+- Handle browser history and navigation state errors
+- Implement proper 404 and access denied pages
+- Handle dynamic route parameter validation errors
+
+## Error Boundary Architecture
+
+### Error Boundary Hierarchy
+```typescript
+// Global level - catches all unhandled errors
+<GlobalErrorBoundary>
+  {/* Feature level - specific feature errors */}
+  <FeatureErrorBoundary>
+    {/* Component level - specific component errors */}
+    <ComponentErrorBoundary>
+      <YourComponent />
+    </ComponentErrorBoundary>
+  </FeatureErrorBoundary>
+</GlobalErrorBoundary>
+```
+
+### Required Error Boundary Components
+```typescript
+// src/components/errorBoundaries/GlobalErrorBoundary.tsx
+class GlobalErrorBoundary extends React.Component {
+  // Catches all unhandled application errors
+  // Provides generic error fallback UI
+  // Logs critical errors to monitoring services
+  // Offers app refresh/reload options
+}
+
+// src/components/errorBoundaries/FeatureErrorBoundary.tsx
+class FeatureErrorBoundary extends React.Component {
+  // Catches feature-specific errors
+  // Provides contextual error messages
+  // Offers feature-specific recovery actions
+  // Allows partial app functionality to continue
+}
+
+// src/components/errorBoundaries/ComponentErrorBoundary.tsx  
+class ComponentErrorBoundary extends React.Component {
+  // Catches individual component errors
+  // Provides component-level fallback UI
+  // Allows rest of feature to function normally
+  // Offers component reload/retry functionality
+}
+
+// src/components/errorBoundaries/FormErrorBoundary.tsx
+class FormErrorBoundary extends React.Component {
+  // Catches form-specific errors
+  // Preserves user input when possible
+  // Provides form validation error display
+  // Offers form reset and retry options
+}
+```
+
+## Error Logging & Monitoring
+
+### Error Logging Strategy
+- Implement structured error logging with consistent format
+- Log errors with proper context (user info, component stack, actions taken)
+- Use different log levels (error, warn, info, debug)
+- Include error metadata (timestamp, user agent, session ID)
+- Implement client-side error queuing for offline scenarios
+
+### Error Monitoring Integration
+- Integrate with monitoring services (Sentry, LogRocket, Bugsnag)
+- Implement proper error sampling to avoid log spam
+- Create error dashboards and alerting systems
+- Track error trends and recurring issues
+- Monitor error recovery success rates
+
+### Error Context Collection
+```typescript
+// src/utils/errorContext.ts
+export const collectErrorContext = () => ({
+  timestamp: new Date().toISOString(),
+  userAgent: navigator.userAgent,
+  url: window.location.href,
+  userId: getCurrentUser()?.id,
+  sessionId: getSessionId(),
+  componentStack: getComponentStack(),
+  reduxState: getReduxState(), // if using Redux
+  localStorageState: getRelevantLocalStorage()
+});
+```
+
+## User-Friendly Error Display
+
+### Error Message Standards
+- Use clear, non-technical language for user-facing errors
+- Provide actionable next steps for error recovery
+- Avoid exposing technical details or stack traces to users
+- Create consistent error message formatting and styling
+- Implement proper internationalization for error messages
+
+### Error UI Components
+```typescript
+// src/components/errors/ErrorDisplay.tsx
+const ErrorDisplay = ({ 
+  title, 
+  message, 
+  actionText, 
+  onAction, 
+  onRetry 
+}) => {
+  // Consistent error display component
+  // Includes retry and recovery actions
+  // Accessible error messaging
+  // Proper error styling with Tailwind
+};
+
+// src/components/errors/ErrorFallback.tsx
+const ErrorFallback = ({ error, resetError }) => {
+  // Generic fallback component for error boundaries
+  // Provides error reporting capabilities
+  // Offers application reset functionality
+  // Logs errors for monitoring
+};
+```
+
+### Toast Notifications for Errors
+- Implement toast system for non-critical errors
+- Use different toast types for different error severities
+- Provide dismiss and action buttons in error toasts
+- Implement toast queuing for multiple errors
+- Create persistent error notifications for critical errors
+
+## Error Recovery Mechanisms
+
+### Automatic Recovery Patterns
+- Implement exponential backoff for retry mechanisms
+- Create circuit breaker patterns for failing operations
+- Implement automatic fallback to cached or default data
+- Use service worker for offline error recovery
+- Create automatic error boundary reset mechanisms
+
+### User-Initiated Recovery
+- Provide clear retry buttons for failed operations
+- Implement "refresh page" options for critical errors
+- Create "report problem" functionality for persistent errors
+- Offer "safe mode" or simplified UI for error scenarios
+- Implement manual data refresh/reload capabilities
+
+### Graceful Degradation
+- Provide fallback UI when features fail
+- Maintain core functionality when non-critical features error
+- Use skeleton screens and placeholders for failed content
+- Implement progressive enhancement patterns
+- Create offline-capable fallback experiences
+
+## Form Error Handling Patterns
+
+### Client-Side Validation Errors
+- Implement real-time validation with debounced feedback
+- Show field-specific error messages with clear positioning
+- Use proper ARIA attributes for error announcements
+- Prevent form submission with unresolved validation errors
+- Preserve user input during error states
+
+### Form Submission Errors
+- Handle network failures during form submission
+- Implement proper loading states during submission
+- Provide clear success/failure feedback
+- Preserve form data on submission failures
+- Offer retry mechanisms for failed submissions
+
+## Development & Debugging Tools
+
+### Error Development Tools
+- Implement error simulation tools for development
+- Create error boundary testing utilities
+- Build error scenario reproduction tools
+- Implement error boundary reset capabilities for development
+- Create error logging viewers for local development
+
+### Error Boundary DevTools
+- Add error boundary names for easier debugging
+- Implement error boundary state inspection
+- Create error boundary performance monitoring
+- Add error boundary recovery testing
+- Implement error boundary coverage reporting
+
+## Error Handling Constants & Types
+
+### Error Constants
+```typescript
+// src/constants/errors.ts
+export const ERROR_TYPES = {
+  RUNTIME: 'RUNTIME_ERROR',
+  COMPONENT: 'COMPONENT_ERROR', 
+  VALIDATION: 'VALIDATION_ERROR',
+  BUSINESS_LOGIC: 'BUSINESS_LOGIC_ERROR',
+  NAVIGATION: 'NAVIGATION_ERROR',
+  USER_INPUT: 'USER_INPUT_ERROR'
+} as const;
+
+export const ERROR_SEVERITY = {
+  CRITICAL: 'critical',
+  HIGH: 'high', 
+  MEDIUM: 'medium',
+  LOW: 'low'
+} as const;
+
+export const USER_ERROR_MESSAGES = {
+  GENERIC: 'Something went wrong. Please try again.',
+  NETWORK: 'Please check your internet connection.',
+  PERMISSION: 'You don\'t have permission to perform this action.',
+  VALIDATION: 'Please check your input and try again.',
+  TIMEOUT: 'The request took too long. Please try again.'
+} as const;
+```
+
+### Error Types
+```typescript
+// src/types/errors.ts
+export interface AppError {
+  type: keyof typeof ERROR_TYPES;
+  severity: keyof typeof ERROR_SEVERITY;
+  message: string;
+  context?: Record<string, any>;
+  timestamp: string;
+  userId?: string;
+  componentStack?: string;
+}
+
+export interface ErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+  errorInfo?: ErrorInfo;
+  errorId?: string;
+}
+```
+
+## Code Implementation Rules
+- Always wrap error-prone operations in try-catch blocks
+- Create error boundaries for all major UI sections
+- Implement proper error logging with structured data
+- Use constants for all error messages and types
+- Provide user-friendly error messages with recovery actions
+- Implement proper cleanup in error scenarios
+- Create reusable error handling utilities and components
+- Test error scenarios thoroughly during development
+- Implement proper error monitoring and alerting
+- Use TypeScript for proper error type safety
+
+## Testing Error Scenarios
+- Create unit tests for error handling functions
+- Test error boundary behavior with different error types
+- Implement integration tests for error recovery flows
+- Test error UI components with various error states
+- Create end-to-end tests for critical error scenarios
+- Test error handling performance and memory usage
+
+## Common Anti-Patterns to Avoid
+- Silently catching and ignoring errors
+- Showing technical error messages to users
+- Not providing recovery mechanisms for errors
+- Implementing error boundaries without fallback UI
+- Not logging errors for debugging and monitoring
+- Using generic error messages for all error types
+- Not testing error scenarios during development
+- Implementing error handling as an afterthought
+
+## Required Folder Structure
+```
+src/
+├── components/
+│   └── errorBoundaries/     # Error boundary components
+│       ├── GlobalErrorBoundary.tsx
+│       ├── FeatureErrorBoundary.tsx
+│       ├── ComponentErrorBoundary.tsx
+│       └── FormErrorBoundary.tsx
+├── components/
+│   └── errors/              # Error display components
+│       ├── ErrorDisplay.tsx
+│       ├── ErrorFallback.tsx
+│       └── ToastNotification.tsx
+├── constants/
+│   └── errors.ts           # Error constants and messages
+├── types/
+│   └── errors.ts           # Error TypeScript types
+├── utils/
+│   ├── errorHandler.ts     # Error handling utilities
+│   ├── errorLogger.ts      # Error logging functions
+│   └── errorContext.ts     # Error context collection
+└── hooks/
+    └── useErrorHandler.ts  # Error handling custom hook
+```
